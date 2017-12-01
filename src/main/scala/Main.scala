@@ -7,6 +7,7 @@ import scala.util.{Failure, Success}
 import org.json4s.DefaultFormats
 import org.json4s.JsonDSL._
 import org.json4s.native.JsonMethods._
+import com.typesafe.config._
 import train.Train
 
 object Main {
@@ -16,7 +17,7 @@ object Main {
         implicit val system = ActorSystem("slack")
         implicit val formats = DefaultFormats
 
-        val token = ""
+        val token = ConfigFactory.load().getString("slack.api_key")
         val client = SlackRtmClient(token)
 
         val check: (String, String) => Boolean = (s, t) => {

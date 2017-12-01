@@ -11,7 +11,8 @@ lazy val root = (project in file(".")).
             "com.github.gilbertw1" %% "slack-scala-client" % "0.2.2",
             "net.databinder.dispatch" %% "dispatch-core" % "0.13.2",
             "org.json4s" %% "json4s-native" % "3.6.0-M1",
-            "net.ruippeixotog" %% "scala-scraper" % "2.0.0"
+            "net.ruippeixotog" %% "scala-scraper" % "2.0.0",
+            "com.typesafe" % "config" % "1.3.1"
         )
     )
 assemblyMergeStrategy in assembly := {
