@@ -9,6 +9,7 @@ import org.json4s.JsonDSL._
 import org.json4s.native.JsonMethods._
 import com.typesafe.config._
 import train.Train
+import compile.Compile
 
 object Main {
     private val wandbox_url = "https://wandbox.org/api/compile.json"
@@ -27,7 +28,7 @@ object Main {
         client.onMessage { message =>
             if (check(message.text, "scala:")) {
                 val body = compact(render(Map(
-                    "code" -> message.text.replaceFirst("scala:", "").replace("&amp;", "&").replace("&quot;", "\"").replace("&lt;", "<").replace("&gt;", ">").replace("&#39;", "'"),
+                    "code" -> Compile.convert(message.text.replaceFirst("scala:", "")),
                     "compiler" -> "scala-2.12.x"
                 )))
                 println(body)

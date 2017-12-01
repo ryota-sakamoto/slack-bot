@@ -11,7 +11,7 @@ import org.json4s.native.JsonMethods._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 case class Station(id: String, name: String)
-case class Train(from_id: String, to_id: String, via: Option[String])
+case class Train(from_id: String, to_id: String, via: List[String])
 case class Description()
 
 object Train {
@@ -22,8 +22,8 @@ object Train {
 
     def parseTrain(message: String): Either[List[String], Train] = {
         val s = message.split('-').toList
-        val stations = s.zip(s match {
-            case List(_, _, _) | List(_, _) => {
+        val stations = s.zip(s.length match {
+            case 5 | 4 | 3 | 2 => {
                 s.map(getStations)
             }
             case _ => List.empty
@@ -38,18 +38,12 @@ object Train {
             }
 
             stations.length match {
-                case 2 => {
+                case n @ (2 | 3 | 4 | 5) => {
                     val from = pickup(0)
-                    val to = pickup(1)
+                    val via = (1 until n - 1).map(pickup(_).id).toList
+                    val to = pickup(n - 1)
 
-                    Right(Train(from.id, to.id, None))
-                }
-                case 3 => {
-                    val from = pickup(0)
-                    val via = pickup(1)
-                    val to = pickup(2)
-
-                    Right(Train(from.id, to.id, Some(via.id)))
+                    Right(Train(from.id, to.id, via))
                 }
                 case _ => Left(List())
             }
@@ -65,10 +59,7 @@ object Train {
     @deprecated
     def getDescriptions(train: Train): String = {
         val browser = JsoupBrowser()
-        val via = train.via match {
-            case Some(v) => s"&thrStationCode1=$v"
-            case None => ""
-        }
+        val via = train.via.zipWithIndex.map(n => s"&thrStationCode${n._2 + 1}=${n._1}").mkString
 
         val doc = browser.get(navitime_search.format(train.from_id, train.to_id) + via)
         val items = doc >> elementList(".route_detail .section_detail_frame").map(_ >> elementList(".section_station_frame"))
