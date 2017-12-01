@@ -3,6 +3,7 @@ package train
 import dispatch._
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
 import net.ruippeixotog.scalascraper.scraper.ContentExtractors.{allText, elementList}
+import net.ruippeixotog.scalascraper.model._
 import net.ruippeixotog.scalascraper.dsl.DSL._
 
 import org.json4s.DefaultFormats
@@ -16,7 +17,7 @@ case class Description()
 
 object Train {
     private val navitime_station_search = "https://www.navitime.co.jp/ajax/transport/getStationList?word=%s"
-    private val navitime_search = "https://www.navitime.co.jp/transfer/searchlist?orvStationCode=%s&dnvStationCode=%s&basis=1&wspeed=100&airplane=1&sprexprs="
+    private val navitime_search = "https://www.navitime.co.jp/transfer/searchlist?orvStationCode=%s&dnvStationCode=%s&basis=1&wspeed=100&airplane=1&sprexprs=%s"
 
     private implicit val formats = DefaultFormats
 
@@ -56,15 +57,33 @@ object Train {
         parse(f()).camelizeKeys.extract[List[Station]]
     }
 
-    @deprecated
     def getDescriptions(train: Train): String = {
         val browser = JsoupBrowser()
         val via = train.via.zipWithIndex.map(n => s"&thrStationCode${n._2 + 1}=${n._1}").mkString
 
-        val doc = browser.get(navitime_search.format(train.from_id, train.to_id) + via)
-        val items = doc >> elementList(".route_detail .section_detail_frame").map(_ >> elementList(".section_station_frame"))
-        val times = items.map(_ >> allText(".sgk_time"))
-        val station_names = items.map(_ >> elementList("a")).map(_.flatten.filter(_.attr("href").contains("poi?node"))).map(_.map(_.text))
-        times.zip(station_names).map(x => x._1.zip(x._2)).map(_.map(x => s"${x._1} ${x._2}").mkString("\n")).mkString("\n\n")
+        val doc = browser.get(navitime_search.format(train.from_id, train.to_id, via))
+
+        val detail = doc >> elementList(".route_detail .section_detail_frame")
+
+        (doc >> elementList(".route_detail")).map { detail =>
+            val time = (detail >> elementList(".time_frame dd")).head.text
+            val price = (detail >> elementList(".fare_frame span"))
+                .filter(_.hasAttr("id"))
+                .filter(_.attr("id").contains("total-fare"))
+                .map(_.text).head
+            val count = (detail >> elementList(".section_header_transfer_frame dd")).map(_.text).head
+
+            val items = detail >> elementList(".section_station_frame")
+            val times = items.map(_ >> allText(".sgk_time"))
+            val station_names = (items >> elementList("a"))
+                .flatten
+                .filter(_.attr("href").contains("poi?node"))
+                .map(_.text)
+
+            "%s円 %s %s\n%s".format(
+                price, time, count, 
+                times.zip(station_names).map(x => s"${x._1} ${x._2}").mkString("\n")
+            )
+        }.mkString("\n\n")
     }
 }
