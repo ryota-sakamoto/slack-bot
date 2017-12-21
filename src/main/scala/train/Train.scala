@@ -67,10 +67,12 @@ object Train {
 
         (doc >> elementList(".route_detail")).map { detail =>
             val time = (detail >> elementList(".time_frame dd")).head.text
-            val price = (detail >> elementList(".fare_frame span"))
-                .filter(_.hasAttr("id"))
-                .filter(_.attr("id").contains("total-fare"))
-                .map(_.text).head
+            val price = (for (
+                frame <- (detail >> elementList(".fare_frame span"))
+                if frame.hasAttr("id")
+                if frame.attr("id").contains("total-fare")
+            ) yield frame.text).head
+
             val count = (detail >> elementList(".section_header_transfer_frame dd")).map(_.text).head
 
             val items = detail >> elementList(".section_station_frame")

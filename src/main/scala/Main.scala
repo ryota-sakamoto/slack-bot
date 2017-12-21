@@ -1,8 +1,8 @@
 import slack.rtm.SlackRtmClient
-import akka.actor.ActorSystem
+import akka.actor._
 import dispatch._
 import dispatch.Defaults._
-
+import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 import org.json4s.DefaultFormats
 import org.json4s.JsonDSL._
@@ -10,6 +10,7 @@ import org.json4s.native.JsonMethods._
 import com.typesafe.config._
 import train.Train
 import compile.Compile
+import script.WatchMaintenanceProductsActor
 
 object Main {
     private val wandbox_url = "https://wandbox.org/api/compile.json"
@@ -45,5 +46,8 @@ object Main {
                 })
             }
         }
+
+        val mac_actor = system.actorOf(Props(classOf[WatchMaintenanceProductsActor], client))
+        mac_actor ! Set[String]()
     }
 }
