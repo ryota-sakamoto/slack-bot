@@ -48,6 +48,6 @@ object Main {
         }
 
         val mac_actor = system.actorOf(Props(classOf[WatchMaintenanceProductsActor], client))
-        mac_actor ! Set[String]()
+        system.scheduler.schedule(0.seconds, 60.seconds, mac_actor, Unit)
     }
 }

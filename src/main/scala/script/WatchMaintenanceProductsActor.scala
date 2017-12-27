@@ -1,22 +1,41 @@
 package script
 
 import akka.actor._
+import akka.persistence.PersistentActor
 import slack.rtm.SlackRtmClient
 
-class WatchMaintenanceProductsActor(val client: SlackRtmClient) extends Actor with ActorLogging {
-    def receive = {
-        case (set: Set[String]) => {
+class WatchMaintenanceProductsActor(val client: SlackRtmClient) extends PersistentActor with ActorLogging {
+    override def persistenceId = "WatchMaintenanceProductsId"
+
+    private var set = Set[String]()
+
+    override def receiveRecover: Receive = {
+        case mac_id: String => {
+            log.info(s"recover $mac_id")
+            set += mac_id
+        }
+    }
+
+    override def receiveCommand: Receive = {
+        case _ => {
             val list = WatchMaintenanceProducts.getList
-            for {
-                l <- list
-                if !set.contains(l._1)
-            } {
-                val id = client.state.getChannelIdForName("slack-bot").get
-                // client.sendMessage(id, l._2)
-                log.info(s"new ${l._1}")
+
+            list.foreach { product =>
+                if (!set.contains(product.id)) {
+                    val id = client.state.getChannelIdForName("slack-bot").get
+                    client.sendMessage(id,
+                        s"""
+                           ${product.specs}
+                           ${product.url}
+                           ${product.price}
+                         """)
+                    log.info(s"new ${product.id}")
+
+                    persist(product.id) { mac_id =>
+                        set += mac_id
+                    }
+                }
             }
-            Thread.sleep(60000) // TODO akka schedule
-            self ! set ++ list.keys.toSet
         }
     }
 }

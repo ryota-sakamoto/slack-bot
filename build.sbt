@@ -12,7 +12,10 @@ lazy val root = (project in file(".")).
             "net.databinder.dispatch" %% "dispatch-core" % "0.13.2",
             "org.json4s" %% "json4s-native" % "3.6.0-M1",
             "net.ruippeixotog" %% "scala-scraper" % "2.0.0",
-            "com.typesafe" % "config" % "1.3.1"
+            "com.typesafe" % "config" % "1.3.1",
+            //"com.typesafe.akka" %% "akka-actor" % "2.5.8",
+            "com.typesafe.akka" %% "akka-persistence" % "2.4.19",
+            "org.iq80.leveldb" % "leveldb" % "0.10"
         )
     )
 assemblyMergeStrategy in assembly := {
