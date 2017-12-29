@@ -7,7 +7,7 @@ import net.ruippeixotog.scalascraper.scraper.ContentExtractors.elementList
 import net.ruippeixotog.scalascraper.dsl.DSL._
 import slack.rtm.SlackRtmClient
 
-class WatchMaintenanceProductsActor(val client: SlackRtmClient) extends PersistentActor with ActorLogging {
+class WatchMaintenanceProductsActor(client: SlackRtmClient, channel_name: String) extends PersistentActor with ActorLogging {
     override def persistenceId = "WatchMaintenanceProductsId"
 
     private var set = Set[String]()
@@ -25,13 +25,13 @@ class WatchMaintenanceProductsActor(val client: SlackRtmClient) extends Persiste
 
             list.foreach { product =>
                 if (!set.contains(product.id)) {
-                    val id = client.state.getChannelIdForName("slack-bot").get
-                   /* client.sendMessage(id,
+                    val id = client.state.getChannelIdForName(channel_name).get
+                   client.sendMessage(id,
                         s"""
                            ${product.specs}
                            ${product.url}
                            ${product.price}
-                         """)*/
+                         """)
                     log.info(s"new ${product.id}")
 
                     persist(product.id) { mac_id =>

@@ -1,3 +1,18 @@
 slack {
     api_key = ""
+    maintenance_channel_name = ""
+}
+
+akka.persistence {
+    journal {
+        plugin = "akka.persistence.journal.leveldb"
+
+        leveldb {
+            native = off
+        }
+    }
+
+    snapshot-store {
+        plugin = "akka.persistence.snapshot-store.local"
+    }
 }
