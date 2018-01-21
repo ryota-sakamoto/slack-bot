@@ -15,7 +15,10 @@ lazy val root = (project in file(".")).
             "com.typesafe" % "config" % "1.3.1",
             //"com.typesafe.akka" %% "akka-actor" % "2.5.8",
             "com.typesafe.akka" %% "akka-persistence" % "2.4.19",
-            "org.iq80.leveldb" % "leveldb" % "0.10"
+            "org.iq80.leveldb" % "leveldb" % "0.10",
+            "org.scalatest" %% "scalatest" % "3.0.4" % "test",
+            "com.typesafe.akka" %% "akka-testkit" % "2.5.9" % Test,
+            "org.scalamock" %% "scalamock" % "4.0.0" % Test
         )
     )
 assemblyMergeStrategy in assembly := {

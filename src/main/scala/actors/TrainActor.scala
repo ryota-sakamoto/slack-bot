@@ -9,7 +9,11 @@ class TrainActor extends Actor with ActorLogging {
             log.info(message)
             Train.parseTrain(message) match {
                 case Left(m) => m.mkString("\n")
-                case Right(train) => Train.getDescriptions(train)
+                case Right(train) =>
+                    val description = Train.getDescriptions(train)
+                    log.info(description)
+
+                    sender ! description
             }
         }
     }

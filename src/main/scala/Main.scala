@@ -3,11 +3,10 @@ import slack.models.Message
 import akka.actor._
 import akka.pattern.ask
 import akka.util.Timeout
-
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 import com.typesafe.config._
-import actors.{TrainActor, WandboxActor, WatchMaintenanceProductsActor}
+import actors._
 import scala.concurrent.Future
 
 object Main {
@@ -18,11 +17,11 @@ object Main {
         val config = ConfigFactory.load()
         val token = config.getString("slack.api_key")
         val maintenance_channel_name = config.getString("slack.maintenance_channel_name")
-        val client = SlackRtmClient(token)
+        val client = SlackRtmClient(token, 60.seconds)
 
         val wandbox_actor = system.actorOf(Props(classOf[WandboxActor]), "WandboxActor")
         val train_actor = system.actorOf(Props(classOf[TrainActor]), "TrainActor")
-        val mac_actor = system.actorOf(Props(classOf[WatchMaintenanceProductsActor], client, maintenance_channel_name), "WatchMaintenanceProductsActor")
+        val mac_actor = system.actorOf(Props(classOf[WatchMaintenanceProductsSupervisor], client, maintenance_channel_name), "WatchMaintenanceProductsSupervisor")
 
         client.onMessage { implicit message =>
             val response = (if (check("scala:")) {
@@ -39,7 +38,7 @@ object Main {
             } client.sendMessage(message.channel, m)
         }
 
-        system.scheduler.schedule(0.seconds, 60.seconds, mac_actor, Unit)
+        system.scheduler.schedule(0.seconds, 60.seconds, mac_actor, Run())
     }
 
     private def check(t: String)(implicit message: Message): Boolean = {
