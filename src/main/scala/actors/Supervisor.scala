@@ -11,6 +11,7 @@ class Supervisor extends Actor {
     private implicit val system = context.system
     private val config = ConfigFactory.load()
     private val token = config.getString("slack.api_key")
+    private val timezone = config.getString("slack.timezone")
     private val maintenance_channel_name = config.getString("slack.maintenance_channel_name")
     private val client = SlackRtmClient(token, 60.seconds)
 
@@ -26,7 +27,7 @@ class Supervisor extends Actor {
         val train_actor = context.actorOf(Props(classOf[TrainActor], slack_actor), "TrainActor")
         val mac_actor = context.actorOf(Props(classOf[WatchMaintenanceProductsSupervisor], slack_actor, client, maintenance_channel_name), "WatchMaintenanceProductsSupervisor")
         context.system.scheduler.schedule(0.seconds, 60.seconds, mac_actor, Run())
-        val notification_actor = context.actorOf(Props(classOf[NotificationActor], slack_actor), "NotificationActor")
+        val notification_actor = context.actorOf(Props(classOf[NotificationActor], slack_actor, timezone), "NotificationActor")
 
         client.onMessage { implicit message =>
             if (check("scala:")) {

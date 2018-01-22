@@ -1,6 +1,7 @@
 slack {
     api_key = ""
     maintenance_channel_name = ""
+    timezone = "Asia/Tokyo"
 }
 
 akka.persistence {
