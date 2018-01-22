@@ -7,11 +7,11 @@ import org.json4s.DefaultFormats
 import org.json4s.JsonDSL._
 import org.json4s.native.JsonMethods.{compact, render}
 
-class WandboxActor extends Actor with ActorLogging {
+class WandboxActor(ref: ActorRef) extends Actor with ActorLogging {
     private val wandbox_url = "https://wandbox.org/api/compile.json"
 
     def receive = {
-        case code: String => {
+        case ReceiveMessage(channel_id, code) => {
             log.info(code)
             val body = Map(
                 "code" -> convert(code),
@@ -21,7 +21,7 @@ class WandboxActor extends Actor with ActorLogging {
             val response = Request(wandbox_url).post(body)
             log.info(response)
 
-            sender ! response
+            ref ! SendMessage(channel_id, response)
         }
     }
 

@@ -12,20 +12,20 @@ import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class WatchMaintenanceProductsSupervisor(client: SlackRtmClient, channel_name: String) extends Actor {
+class WatchMaintenanceProductsSupervisor(ref: ActorRef, client: SlackRtmClient, channel_name: String) extends Actor {
     implicit val timeout = Timeout(60.seconds)
-    private val actor = context.actorOf(Props(classOf[WatchMaintenanceProductsActor]))
+    private val actor = context.actorOf(Props(classOf[WatchMaintenanceProductsActor], WatchMaintenanceProductsImpl))
     private val channel_id = client.state.getChannelIdForName(channel_name).get
 
     def receive = {
         case _: Run => {
             val data = (actor ? Run()).asInstanceOf[Future[List[String]]]
-            data.foreach(_.foreach(d => client.sendMessage(channel_id, d)))
+            data.foreach(_.foreach(d => ref ! SendMessage(channel_id, d)))
         }
     }
 }
 
-class WatchMaintenanceProductsActor extends PersistentActor with ActorLogging {
+class WatchMaintenanceProductsActor(w: WatchMaintenanceProducts) extends PersistentActor with ActorLogging {
     override def persistenceId = "WatchMaintenanceProductsId"
 
     private var set = Set[String]()
@@ -37,7 +37,7 @@ class WatchMaintenanceProductsActor extends PersistentActor with ActorLogging {
 
     override def receiveCommand: Receive = {
         case _: Run => {
-            val list = WatchMaintenanceProducts.getList
+            val list = w.getList
 
             val add_list = for {
                 product <- list
@@ -72,19 +72,19 @@ class WatchMaintenanceProductsActor extends PersistentActor with ActorLogging {
     }
 }
 
-private case class Product(id: String, specs: String, price: String, url: String)
+case class Product(id: String, specs: String, price: String, url: String)
 
 sealed trait Command
 case class Run() extends Command
 case class Add(id: String) extends Command
 case class Remove(id: String) extends Command
 
-private object WatchMaintenanceProducts {
+private object WatchMaintenanceProductsImpl extends WatchMaintenanceProducts {
     private val prefix = "https://www.apple.com"
     private val url = s"$prefix/jp/shop/browse/home/specialdeals/mac/macbook_pro"
     private val regex = "(/jp/shop/product/)(.*?)/A/.*".r
 
-    def getList: List[Product] = {
+    def getList(): List[Product] = {
         val browser = JsoupBrowser()
         val doc = browser.get(url)
 
@@ -107,4 +107,8 @@ private object WatchMaintenanceProducts {
             }
         }
     }
+}
+
+trait WatchMaintenanceProducts {
+    def getList(): List[Product]
 }

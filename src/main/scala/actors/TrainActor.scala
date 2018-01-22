@@ -3,18 +3,19 @@ package actors
 import akka.actor._
 import train._
 
-class TrainActor extends Actor with ActorLogging {
+class TrainActor(ref: ActorRef) extends Actor with ActorLogging {
     def receive = {
-        case message: String => {
+        case ReceiveMessage(id, message) => {
             log.info(message)
-            Train.parseTrain(message) match {
+            val response = Train.parseTrain(message) match {
                 case Left(m) => m.mkString("\n")
                 case Right(train) =>
                     val description = Train.getDescriptions(train)
                     log.info(description)
-
-                    sender ! description
+                    description
             }
+
+            ref ! SendMessage(id, response)
         }
     }
 }
