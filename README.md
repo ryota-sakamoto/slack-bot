@@ -1,5 +1,5 @@
 # Slack Bot
-
+[![Build Status](https://travis-ci.org/ryota-sakamoto/slack-bot.svg?branch=master)](https://travis-ci.org/ryota-sakamoto/slack-bot)
 ## Scala Online Compile
 ### Message
 ```
