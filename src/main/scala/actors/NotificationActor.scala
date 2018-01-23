@@ -13,7 +13,7 @@ class NotificationActor(ref: ActorRef, timezone: String) extends Actor with Acto
         case ReceiveMessage(id, message) => {
             val pos = message.indexOf(" ")
             val (time, m) = message.replaceFirst(" ", "").splitAt(pos)
-            if (!time.matches("^[012][0-9][0-5][0-9]$")) {
+            if (!time.matches("^([01][0-9]|2[0-3])[0-5][0-9]$")) {
                 ref ! SendMessage(id, "Invalid Request")
             } else {
                 val datetime = new DateTime(timezone_id)
