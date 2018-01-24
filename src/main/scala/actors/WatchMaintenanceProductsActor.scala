@@ -8,6 +8,8 @@ import net.ruippeixotog.scalascraper.dsl.DSL._
 import slack.rtm.SlackRtmClient
 import akka.pattern.ask
 import akka.util.Timeout
+import net.ruippeixotog.scalascraper.model.TextNode
+
 import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -45,11 +47,17 @@ class WatchMaintenanceProductsActor(w: WatchMaintenanceProducts) extends Persist
             } yield {
                 self ! Add(product.id)
 
+                // TODO move config
                 s"""
-                    ${product.specs}
-                    ${product.url}
-                    ${product.price}
-                    """
+                    |```
+                    |- ${product.date}
+                    |- ${product.size}
+                    |- ${product.memory}
+                    |- ${product.ssd}
+                    |- ${product.price}
+                    |- ${product.url}
+                    |```
+                    """.stripMargin
             }
 
             for {
@@ -72,7 +80,7 @@ class WatchMaintenanceProductsActor(w: WatchMaintenanceProducts) extends Persist
     }
 }
 
-case class Product(id: String, specs: String, price: String, url: String)
+case class Product(id: String,date: String, size: String, memory: String, ssd: String, specs: String, price: String, url: String)
 
 sealed trait Command
 case class Run() extends Command
@@ -83,6 +91,7 @@ private object WatchMaintenanceProductsImpl extends WatchMaintenanceProducts {
     private val prefix = "https://www.apple.com"
     private val url = s"$prefix/jp/shop/browse/home/specialdeals/mac/macbook_pro"
     private val regex = "(/jp/shop/product/)(.*?)/A/.*".r
+    private val exclude = Seq("Touch IDセンサーが組み込まれたTouch Bar")
 
     def getList(): List[Product] = {
         val browser = JsoupBrowser()
@@ -90,16 +99,29 @@ private object WatchMaintenanceProductsImpl extends WatchMaintenanceProducts {
 
         for {
             product <- doc >> elementList(".product")
-            specs <- product >> elementList("h3 a")
+            specs <- product >> elementList(".specs")
+            product_url <- product >> elementList("h3 a")
             info <- product >> elementList(".purchase-info")
             price <- info >> elementList(".current_price")
         } yield {
-            specs.attr("href") match {
+            val nodes = (for {
+                node <- specs.childNodes
+                if node.isInstanceOf[TextNode]
+            } yield node.asInstanceOf[TextNode])
+                .filter(_.content.length > 1)
+                .filterNot(n => exclude.contains(n.content.trim))
+                .toSeq
+
+            product_url.attr("href") match {
                 case regex(p, id) => {
                     val url = prefix + p + id
                     Product(
                         id = id,
-                        specs = specs.text,
+                        date = nodes.head.content,
+                        size = nodes(1).content,
+                        memory = nodes(2).content,
+                        ssd = nodes(3).content,
+                        specs = product_url.text,
                         price = price.text,
                         url = url
                     )
