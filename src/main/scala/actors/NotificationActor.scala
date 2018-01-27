@@ -6,7 +6,7 @@ import org.joda.time.{DateTime, DateTimeZone, Seconds}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
-class NotificationActor(ref: ActorRef, timezone: String) extends Actor with ActorLogging {
+class NotificationActor(ref: ActorRef, schedule_ref: ActorRef, timezone: String) extends Actor with ActorLogging {
     private val timezone_id = DateTimeZone.forID(timezone)
 
     override def receive: Receive = {
@@ -24,9 +24,10 @@ class NotificationActor(ref: ActorRef, timezone: String) extends Actor with Acto
 
                 log.info(s"$message")
                 val s = Seconds.secondsBetween(new DateTime(timezone_id), datetime).getSeconds
-                context.system.scheduler.scheduleOnce(s.seconds) {
+
+                schedule_ref ! Schedule.Once(() => {
                     ref ! SendMessage(id, m)
-                }
+                }, s)
             }
         }
     }

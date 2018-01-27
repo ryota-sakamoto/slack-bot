@@ -4,7 +4,6 @@ import akka.actor.{Actor, Props}
 import com.typesafe.config.ConfigFactory
 import slack.models.Message
 import slack.rtm.SlackRtmClient
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
 class Supervisor extends Actor {
@@ -26,8 +25,9 @@ class Supervisor extends Actor {
         val wandbox_actor = context.actorOf(Props(classOf[WandboxActor], slack_actor), "WandboxActor")
         val train_actor = context.actorOf(Props(classOf[TrainActor], slack_actor), "TrainActor")
         val mac_actor = context.actorOf(Props(classOf[WatchMaintenanceProductsSupervisor], slack_actor, client, maintenance_channel_name), "WatchMaintenanceProductsSupervisor")
-        context.system.scheduler.schedule(0.seconds, 60.seconds, mac_actor, Run())
-        val notification_actor = context.actorOf(Props(classOf[NotificationActor], slack_actor, timezone), "NotificationActor")
+        val schedule_actor = context.actorOf(Props(classOf[ScheduleActor]))
+        schedule_actor ! Schedule.Repeat(() => mac_actor ! Run())
+        val notification_actor = context.actorOf(Props(classOf[NotificationActor], slack_actor, schedule_actor, timezone), "NotificationActor")
 
         client.onMessage { implicit message =>
             if (check("scala:")) {
@@ -51,3 +51,12 @@ class Supervisor extends Actor {
 
 case class ReceiveMessage(sender: String, message: String)
 case class SendMessage(sender: String, message: String)
+
+object Schedule {
+    sealed trait ScheduleTrait {
+        val callback: () => Unit
+        val second: Int
+    }
+    case class Once(callback: () => Unit, second: Int = 60) extends ScheduleTrait
+    case class Repeat(callback: () => Unit, second: Int = 60) extends ScheduleTrait
+}

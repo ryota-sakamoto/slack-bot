@@ -1,7 +1,7 @@
 package actors
 
 import akka.actor.{ActorRef, ActorSystem, Props}
-import akka.testkit.TestKit
+import akka.testkit.{TestKit, TestProbe}
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike}
 
 class NotificationActorSpec extends TestKit(ActorSystem())
@@ -11,14 +11,15 @@ class NotificationActorSpec extends TestKit(ActorSystem())
     private val id = "id"
     private val m = "message"
     private val invalid_request = SendMessage(id, "Invalid Request")
+    private val probe = TestProbe()
     override def afterAll: Unit = TestKit.shutdownActorSystem(system)
 
-    def createActor: ActorRef = {
-        system.actorOf(Props(classOf[NotificationActor], testActor, "Asia/Tokyo"))
+    def createActor(sender: ActorRef): ActorRef = {
+        system.actorOf(Props(classOf[NotificationActor], testActor, sender, "Asia/Tokyo"))
     }
 
     "ReceiveMessage" should "Invalid Request" in {
-        val actor = createActor
+        val actor = createActor(probe.ref)
 
         actor ! ReceiveMessage(id, s"0000")
         expectMsg(invalid_request)
@@ -39,11 +40,20 @@ class NotificationActorSpec extends TestKit(ActorSystem())
         expectMsg(invalid_request)
     }
 
+    // TODO test
     it should "Success Request" in {
-        val actor = createActor
+        val testProbe = new TestProbe(system) {
+            def expectSchedule(s: Schedule.ScheduleTrait) = {
+                expectMsgPF() {
+                    case Schedule.Once(callback, second) if callback.toString.contains("NotificationActor") && second < s.second => true
+                }
+            }
+        }
+
+        val actor = createActor(testProbe.ref)
 
         actor ! ReceiveMessage(id, s"0000 $m")
-        expectMsg(SendMessage(id, m))
+        testProbe.expectSchedule(Schedule.Once(() => {}, 0))
 
         actor ! ReceiveMessage(id, s"2359 $m")
         // TODO schedule test
