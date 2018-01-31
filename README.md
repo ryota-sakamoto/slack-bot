@@ -1,6 +1,14 @@
 # Slack Bot
 [![Build Status](https://travis-ci.org/ryota-sakamoto/slack-bot.svg?branch=master)](https://travis-ci.org/ryota-sakamoto/slack-bot)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/2b45526374f34a88b0c2fcc4f85fd09c)](https://www.codacy.com/app/ryota-sakamoto/slack-bot?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=ryota-sakamoto/slack-bot&amp;utm_campaign=Badge_Grade)
+
+## Usage
+```
+cp application.conf.dev application.conf
+vi application.conf
+// change api_key and maintenance_channel_name
+```
+
 ## Scala Online Compile
 ### Message
 ```
@@ -50,3 +58,17 @@ set:2355 message
 ```
 message
 ```
+
+## Watch Maintenance Mac(MacBook Pro)
+### Result
+```
+-  XXXX年X月発売モデル
+-  XXXインチ
+-  XGB 2,133MHz LPDDR3オンボードメモリ
+-  XXXGB PCIeベースオンボードSSD
+- ￥XXX,XXX (税別)
+- url
+```
+### TODO
+```
+move format  to application.conf
