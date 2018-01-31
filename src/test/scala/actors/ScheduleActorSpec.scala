@@ -11,7 +11,10 @@ class ScheduleActorSpec extends TestKit(ActorSystem())
 
     override def afterAll(): Unit = TestKit.shutdownActorSystem(system)
 
-    private def callback(message: String): () => Unit = () => testActor ! message
+    private def callback(message: String): () => Unit = () => {
+        println("send")
+        testActor ! message
+    }
 
     "Once" should "Send Request" in {
         val actor = system.actorOf(Props(classOf[ScheduleActor]))
@@ -35,7 +38,14 @@ class ScheduleActorSpec extends TestKit(ActorSystem())
         assert(receiveOne(2.seconds) != "2")
         assert(receiveOne(3.seconds) != "3")
         assert(receiveOne(10.seconds) != "10")
+        expectMsg(10.1.seconds, "10")
     }
 
-    // TODO repeat test
+    "Repeat" should "Send Request" in {
+        val actor = system.actorOf(Props(classOf[ScheduleActor]))
+        actor ! Schedule.Repeat(callback("1"), 1)
+        for (_ <- 0 to 10) {
+            expectMsg(1.1.seconds, "1")
+        }
+    }
 }
