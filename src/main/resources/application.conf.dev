@@ -1,6 +1,5 @@
 slack {
     api_key = ""
-    maintenance_channel_name = ""
     timezone = "Asia/Tokyo"
 }
 
@@ -16,4 +15,18 @@ akka.persistence {
     snapshot-store {
         plugin = "akka.persistence.snapshot-store.local"
     }
+}
+
+maintenance {
+    channel_name = ""
+    format = """
+|```
+|- $date
+|- $size
+|- $memory
+|- $ssd
+|- $price
+|- $url
+|```
+"""
 }

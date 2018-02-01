@@ -14,9 +14,9 @@ import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class WatchMaintenanceProductsSupervisor(ref: ActorRef, client: SlackRtmClient, channel_name: String) extends Actor {
+class WatchMaintenanceProductsSupervisor(ref: ActorRef, client: SlackRtmClient, channel_name: String, format: String) extends Actor {
     implicit val timeout = Timeout(60.seconds)
-    private val actor = context.actorOf(Props(classOf[WatchMaintenanceProductsActor], WatchMaintenanceProductsImpl))
+    private val actor = context.actorOf(Props(classOf[WatchMaintenanceProductsActor], WatchMaintenanceProductsImpl, format))
     private val channel_id = client.state.getChannelIdForName(channel_name).get
 
     def receive = {
@@ -27,7 +27,7 @@ class WatchMaintenanceProductsSupervisor(ref: ActorRef, client: SlackRtmClient, 
     }
 }
 
-class WatchMaintenanceProductsActor(w: WatchMaintenanceProducts) extends PersistentActor with ActorLogging {
+class WatchMaintenanceProductsActor(w: WatchMaintenanceProducts, format: String) extends PersistentActor with ActorLogging {
     override def persistenceId = "WatchMaintenanceProductsId"
 
     private var set = Set[String]()
@@ -47,17 +47,13 @@ class WatchMaintenanceProductsActor(w: WatchMaintenanceProducts) extends Persist
             } yield {
                 self ! Add(product.id)
 
-                // TODO move config
-                s"""
-                    |```
-                    |- ${product.date}
-                    |- ${product.size}
-                    |- ${product.memory}
-                    |- ${product.ssd}
-                    |- ${product.price}
-                    |- ${product.url}
-                    |```
-                    """.stripMargin
+                format.replace("$date", product.date)
+                    .replace("$size", product.size)
+                    .replace("$memory", product.memory)
+                    .replace("$ssd", product.ssd)
+                    .replace("$price", product.price)
+                    .replace("$url", product.url)
+                    .stripMargin
             }
 
             for {

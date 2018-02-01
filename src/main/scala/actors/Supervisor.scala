@@ -11,7 +11,8 @@ class Supervisor extends Actor {
     private val config = ConfigFactory.load()
     private val token = config.getString("slack.api_key")
     private val timezone = config.getString("slack.timezone")
-    private val maintenance_channel_name = config.getString("slack.maintenance_channel_name")
+    private val maintenance_channel_name = config.getString("maintenance.channel_name")
+    private val format = config.getString("maintenance.format")
     private val client = SlackRtmClient(token, 60.seconds)
 
     actorStart()
@@ -24,7 +25,7 @@ class Supervisor extends Actor {
         val slack_actor = context.actorOf(Props(classOf[SlackActor], client), "SlackActor")
         val wandbox_actor = context.actorOf(Props(classOf[WandboxActor], slack_actor), "WandboxActor")
         val train_actor = context.actorOf(Props(classOf[TrainActor], slack_actor), "TrainActor")
-        val mac_actor = context.actorOf(Props(classOf[WatchMaintenanceProductsSupervisor], slack_actor, client, maintenance_channel_name), "WatchMaintenanceProductsSupervisor")
+        val mac_actor = context.actorOf(Props(classOf[WatchMaintenanceProductsSupervisor], slack_actor, client, maintenance_channel_name, format), "WatchMaintenanceProductsSupervisor")
         val schedule_actor = context.actorOf(Props(classOf[ScheduleActor]))
         schedule_actor ! Schedule.Repeat(() => mac_actor ! Run())
         val notification_actor = context.actorOf(Props(classOf[NotificationActor], slack_actor, schedule_actor, timezone), "NotificationActor")
