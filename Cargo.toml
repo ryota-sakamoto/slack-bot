@@ -1,0 +1,7 @@
+[package]
+name = "slack-bot"
+version = "0.0.1"
+
+[[bin]]
+name = "main"
+path = "src/main/rust/main.rs"
