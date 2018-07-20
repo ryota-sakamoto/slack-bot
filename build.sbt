@@ -1,6 +1,7 @@
 import Dependencies._
 
 lazy val root = (project in file(".")).
+    enablePlugins(JavaAppPackaging).
     settings(
         inThisBuild(List(
             scalaVersion := "2.12.4",
